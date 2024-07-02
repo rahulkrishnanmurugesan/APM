@@ -1,0 +1,44 @@
+---
+- name: Install and configure PostgreSQL
+  hosts: clientserver
+  become: yes
+
+  tasks:
+    - name: Install PostgreSQL server and contrib packages
+      yum:
+        name:
+          - postgresql-server
+          - postgresql-contrib
+        state: present
+
+    - name: Initialize PostgreSQL database
+      block:
+        - name: Ensure PostgreSQL service is stopped
+          service:
+            name: postgresql
+            state: stopped
+          ignore_errors: yes
+
+        - name: Clear PostgreSQL data directory
+          command: rm -rf /var/lib/pgsql/data/*
+          ignore_errors: yes
+
+        - name: Initialize PostgreSQL database
+          command: sudo -u postgres postgresql-setup --initdb
+          args:
+            creates: /var/lib/pgsql/data/postgresql.conf  # Check if postgresql.conf is created after initialization
+          register: setup_result
+          changed_when: setup_result.rc == 0
+
+      rescue:
+        - name: Handle initialization errors
+          fail:
+            msg: "Failed to initialize PostgreSQL: {{ setup_result.stderr }}"
+          when: "'setup_result' in vars and setup_result.rc != 0"
+
+    - name: Start and enable PostgreSQL service
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
+

@@ -1,0 +1,55 @@
+---
+- name: Install and configure PostgreSQL 14 from source
+  hosts: clientserver
+  become: true
+
+  tasks:
+    # Previous tasks for installation and setup as previously discussed...
+
+    - name: Ensure correct ownership of PostgreSQL directories
+      ansible.builtin.file:
+        path: /var/lib/pgsql/14/data
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: '0700'
+
+    - name: Ensure correct ownership of PostgreSQL log file
+      ansible.builtin.file:
+        path: /var/log/postgresql-14.log
+        state: touch
+        owner: postgres
+        group: postgres
+        mode: '0644'
+
+    - name: Create systemd service file for PostgreSQL
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/postgresql-14.service
+        content: |
+          [Unit]
+          Description=PostgreSQL 14 database server
+          Documentation=https://www.postgresql.org/docs/14/static/
+          After=network.target
+
+          [Service]
+          Type=forking
+          User=postgres
+          Group=postgres
+          ExecStart=/usr/local/pgsql-14.0/bin/pg_ctl start -D /var/lib/pgsql/14/data -l /var/log/postgresql-14.log
+          ExecStop=/usr/local/pgsql-14.0/bin/pg_ctl stop -D /var/lib/pgsql/14/data
+          ExecReload=/usr/local/pgsql-14.0/bin/pg_ctl reload -D /var/lib/pgsql/14/data
+          TimeoutSec=300
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Start PostgreSQL service
+      ansible.builtin.service:
+        name: postgresql-14
+        state: started
+        enabled: yes
+

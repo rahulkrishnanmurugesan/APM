@@ -1,0 +1,60 @@
+---
+- hosts: clientserver
+  become: yes
+  connection: ssh
+  tasks:
+    - name: Update repositories
+      yum:
+        name: "*"
+        state: latest
+
+    - name: Install Java JDK 8
+      yum:
+        name: java-1.8.0-openjdk
+        state: present
+
+    - name: Download Java JDK 17
+      get_url:
+        url: "https://download.java.net/java/GA/jdk17/0d483333a00540d886896bac774ff48b/35/GPL/openjdk-17_linux-x64_bin.tar.gz"
+        dest: "/tmp/openjdk-17_linux-x64_bin.tar.gz"
+
+    - name: Ensure /opt/openjdk-17 directory exists
+      file:
+        path: /opt/openjdk-17
+        state: directory
+        mode: '0755'
+
+    - name: Extract Java JDK 17
+      ansible.builtin.unarchive:
+        src: "/tmp/openjdk-17_linux-x64_bin.tar.gz"
+        dest: "/opt/openjdk-17"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+        creates: "/opt/openjdk-17/bin/java"  # Skip extraction if already exists
+
+    - name: Set JAVA_HOME environment variable
+      ansible.builtin.lineinfile:
+        dest: "/etc/profile"
+        line: 'export JAVA_HOME=/opt/openjdk-17'
+        insertafter: EOF
+        state: present
+
+    - name: Add JAVA_HOME to PATH
+      ansible.builtin.lineinfile:
+        dest: "/etc/profile"
+        line: 'export PATH=$JAVA_HOME/bin:$PATH'
+        insertafter: EOF
+        state: present
+
+    - name: Source /etc/profile to load environment variables
+      shell: source /etc/profile
+      args:
+        executable: /bin/bash
+
+    - name: Verify Java JDK 17 installation
+      shell: |
+        source /etc/profile
+        java -version
+        javac -version
+      args:
+        executable: /bin/bash
