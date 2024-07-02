@@ -1,0 +1,29 @@
+- name: Configure PostgreSQL
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install PostgreSQL from Amazon Linux Extras
+      command: amazon-linux-extras install postgresql14 -y
+
+    - name: Install PostgreSQL server and contrib packages
+      yum:
+        name: 
+          - postgresql-server
+          - postgresql-contrib
+        state: present
+
+    - name: Initialize PostgreSQL database using postgresql-setup
+      command: postgresql-setup --initdb
+      register: result
+      ignore_errors: true
+
+    - name: Initialize PostgreSQL database using initdb directly
+      command: /usr/bin/initdb -D /var/lib/pgsql/data
+      when: result.failed
+
+    - name: Start and enable PostgreSQL service
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
