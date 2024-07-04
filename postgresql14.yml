@@ -1,6 +1,6 @@
 ---
 - name: Build and Install PostgreSQL 14 from source
-  hosts: clientserver
+  hosts: local
   become: true
 
   tasks:

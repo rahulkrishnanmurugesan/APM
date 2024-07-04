@@ -1,8 +1,0 @@
-- hosts: clientserver
-  become: true
-  tasks:
-    - name: Install PostgreSQL
-      package:
-        name: postgresql-14
-        state: present  # Ensure PostgreSQL version 14 is installed
-
