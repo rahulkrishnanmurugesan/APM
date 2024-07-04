@@ -1,7 +1,7 @@
 ---
 - hosts: local
   become: yes
-  connection: ssh
+  connection: local
   tasks:
     - name: Update repositories
       yum:
@@ -53,8 +53,10 @@
 
     - name: Verify Java JDK 17 installation
       shell: |
-        source /etc/profile
+        export JAVA_HOME=/opt/openjdk-17
+        export PATH=$JAVA_HOME/bin:$PATH
         java -version
         javac -version
       args:
         executable: /bin/bash
+
